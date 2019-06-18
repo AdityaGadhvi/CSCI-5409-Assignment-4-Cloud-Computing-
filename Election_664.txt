@@ -1,0 +1,99 @@
+pragma solidity ^0.4.21;
+
+contract Election_664 {
+    
+    struct Candidate_664{
+        string name;
+        uint voteCount;
+    }
+    
+    struct Voter_664{
+        bool authorized;
+        bool voted;
+        uint vote;
+        uint allowedVotes;
+    }
+    
+    address public owner;
+    string public electionName;
+    
+    mapping(address=>Voter_664) public voters;
+    Candidate_664[] public candidates;
+    uint public totalVotes=0;
+    uint public noOfVoters=0;
+    bool public close_election=false;
+    
+    modifier ownerOnly_664(){
+        require(msg.sender==owner);
+        _;
+    }
+    
+    function Election_664(string _name) public{
+        owner=msg.sender;
+        electionName=_name;
+        voters[owner].authorized=true;
+        voters[owner].allowedVotes=1;
+    }
+  
+    
+    function addCandidate_664(string _name) ownerOnly_664 public{
+        candidates.push(Candidate_664(_name,0));
+    }
+    
+    function getNumCandidate_664() public view returns(uint){
+        return candidates.length;
+    }
+    
+     function getNumVoters_664() public view returns(uint){
+        return noOfVoters;
+    }
+    
+    function registerVoter_664(address _person) ownerOnly_664 public{
+        voters[_person].authorized=true;
+        voters[_person].allowedVotes=2;
+        noOfVoters+=1;
+    }
+    
+    function vote_664(uint _voteIndex,uint no_Of_Votes) public {
+        require(!voters[msg.sender].voted);
+        require(voters[msg.sender].authorized);
+        require(msg.sender!=owner);
+        require(close_election==false);
+        
+        if(voters[msg.sender].allowedVotes!=0 && voters[msg.sender].allowedVotes>=no_Of_Votes){
+            voters[msg.sender].vote=_voteIndex;
+            voters[msg.sender].allowedVotes-=no_Of_Votes;
+            candidates[_voteIndex].voteCount+=no_Of_Votes;
+            totalVotes+=no_Of_Votes;    
+        }
+        else{
+            voters[msg.sender].voted=true;
+        }
+        
+    }
+    
+    function delegateVotes_664(address _targetVoter,uint _no_of_votes) public{
+        require(voters[msg.sender].authorized);
+        require(voters[_targetVoter].authorized);
+        require(voters[msg.sender].allowedVotes>0);
+        voters[msg.sender].allowedVotes-=_no_of_votes;
+        voters[_targetVoter].allowedVotes+=_no_of_votes;
+    }
+    
+    function tieBreaker_664(uint _candidate1VoteIndex, uint _candidate2VoteIndex, uint _desiredCandidateVoteIndex) ownerOnly_664 public{
+        require(close_election);
+        
+        if(candidates[_candidate1VoteIndex].voteCount==candidates[_candidate2VoteIndex].voteCount && voters[owner].allowedVotes>0){
+            candidates[_desiredCandidateVoteIndex].voteCount+=1;
+        }
+    }
+    
+    function closeElection_664() ownerOnly_664 public{
+        close_election=true;
+    }
+    
+    function end_664() ownerOnly_664 public{
+        selfdestruct(owner);
+    }
+    
+}
